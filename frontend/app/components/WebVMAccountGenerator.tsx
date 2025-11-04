@@ -240,13 +240,19 @@ if __name__ == '__main__':
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 mb-4">
-      <h3 className="text-lg font-semibold mb-2">Account Generator Status</h3>
+    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border border-purple-100 shadow-lg">
+      <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <span>🔧</span>
+        <span>Account Generator Status</span>
+      </h3>
       <div className="space-y-2">
         {loading && (
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-            <span className="text-sm text-gray-600">{status}</span>
+          <div className="flex items-center space-x-3 p-4 bg-white rounded-xl border border-purple-200">
+            <div className="relative">
+              <div className="absolute inset-0 animate-ping rounded-full bg-purple-400 opacity-75"></div>
+              <div className="relative animate-spin rounded-full h-5 w-5 border-2 border-purple-600 border-t-transparent"></div>
+            </div>
+            <span className="text-sm font-medium text-gray-700">{status}</span>
           </div>
         )}
       </div>

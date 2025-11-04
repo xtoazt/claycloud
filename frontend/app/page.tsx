@@ -304,105 +304,200 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-white mb-4">Clay Cloud</h1>
-          <p className="text-xl text-white/90 mb-8">
+    <main className="min-h-screen p-4 md:p-8 relative z-10">
+      <div className="max-w-6xl mx-auto">
+        {/* Hero Section */}
+        <div className="text-center mb-12 relative">
+          <div className="inline-block mb-6 animate-float">
+            <div className="text-7xl md:text-8xl mb-4">☁️</div>
+          </div>
+          <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
+            Clay Cloud
+          </h1>
+          <p className="text-xl md:text-2xl text-white/95 mb-2 font-light">
             Free cloud computing with automated account management
+          </p>
+          <p className="text-lg text-white/80 font-light">
+            Powered by WebVM • Zero configuration required
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          {!session ? (
-            <div className="text-center">
-              <p className="text-gray-600 mb-6">
-                Get started with a free cloud computing session. We&apos;ll automatically
-                set up everything you need using WebVM.
-              </p>
-              <button
-                onClick={createSession}
-                disabled={loading}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? 'Creating Session...' : 'Start Free Session'}
-              </button>
-              {error && (
-                <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              {accountInfo && !accountCreated && (
-                <WebVMAccountGenerator
-                  accountInfo={accountInfo}
-                  onAccountCreated={handleAccountCreated}
-                />
-              )}
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Session Status</h2>
-                <div className="space-y-2">
-                  <p>
-                    <span className="font-semibold">Status:</span>{' '}
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      session.status === 'ready' ? 'bg-green-100 text-green-800' :
-                      session.status === 'creating' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {session.status.toUpperCase()}
-                    </span>
-                  </p>
-                  {/* Don't show account email - keep it hidden from user */}
-                  {session.vmUrl && (
-                    <p>
-                      <span className="font-semibold">VM URL:</span>{' '}
-                      <a
-                        href={session.vmUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {session.vmUrl}
-                      </a>
+        {/* Main Content Card */}
+        <div className="glass-strong rounded-3xl shadow-2xl p-6 md:p-10 relative overflow-hidden">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+          
+          <div className="relative z-10">
+            {!session ? (
+              <div className="text-center py-8 md:py-12">
+                <div className="max-w-2xl mx-auto">
+                  <div className="mb-8">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+                      Get Started in Seconds
+                    </h2>
+                    <p className="text-lg text-gray-600 mb-2">
+                      We&apos;ll automatically set up everything you need
                     </p>
+                    <p className="text-base text-gray-500">
+                      Free cloud computing powered by Google Colab and WebVM
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={createSession}
+                    disabled={loading}
+                    className="group relative inline-flex items-center justify-center px-10 py-4 text-lg font-bold text-white bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-size-200 bg-pos-0 hover:bg-pos-100 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden"
+                    style={{
+                      backgroundSize: '200% 100%',
+                    }}
+                  >
+                    <span className="relative z-10 flex items-center gap-3">
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Creating Session...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨</span>
+                          <span>Start Free Session</span>
+                          <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </>
+                      )}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-700 via-pink-700 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                  
+                  {error && (
+                    <div className="mt-6 max-w-md mx-auto p-4 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-lg">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <p className="text-red-700 font-medium">{error}</p>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Features */}
+                  <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100">
+                      <div className="text-4xl mb-3">⚡</div>
+                      <h3 className="font-bold text-gray-800 mb-2">Instant Setup</h3>
+                      <p className="text-sm text-gray-600">Automated account creation and configuration</p>
+                    </div>
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-100">
+                      <div className="text-4xl mb-3">🔄</div>
+                      <h3 className="font-bold text-gray-800 mb-2">Auto-Recovery</h3>
+                      <p className="text-sm text-gray-600">Seamless account switching when resources are exhausted</p>
+                    </div>
+                    <div className="p-6 rounded-xl bg-gradient-to-br from-pink-50 to-orange-50 border border-pink-100">
+                      <div className="text-4xl mb-3">💰</div>
+                      <h3 className="font-bold text-gray-800 mb-2">100% Free</h3>
+                      <p className="text-sm text-gray-600">No credit card, no hidden fees</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {session.status === 'ready' && session.vmUrl && (
-                <div className="border-t pt-6">
-                  <iframe
-                    src={session.vmUrl}
-                    className="w-full h-[600px] border rounded-lg"
-                    title="Cloud VM"
+            ) : (
+              <>
+                {accountInfo && !accountCreated && (
+                  <WebVMAccountGenerator
+                    accountInfo={accountInfo}
+                    onAccountCreated={handleAccountCreated}
                   />
-                </div>
-              )}
+                )}
+                
+                <div className="space-y-8">
+                  {/* Session Status Card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                      <span>📊</span>
+                      <span>Session Status</span>
+                    </h2>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-gray-700">Status:</span>
+                        <span className={`px-4 py-2 rounded-full text-sm font-bold shadow-md ${
+                          session.status === 'ready' ? 'bg-gradient-to-r from-green-400 to-green-600 text-white' :
+                          session.status === 'creating' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' :
+                          'bg-gradient-to-r from-red-400 to-red-600 text-white'
+                        }`}>
+                          {session.status === 'ready' ? '✓ READY' :
+                           session.status === 'creating' ? '⏳ CREATING' :
+                           '✗ ERROR'}
+                        </span>
+                      </div>
+                      {session.vmUrl && (
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                          <span className="font-semibold text-gray-700">VM URL:</span>
+                          <a
+                            href={session.vmUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 font-medium hover:underline flex items-center gap-2"
+                          >
+                            <span>Open VM</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-              {session.status === 'creating' && (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  <p className="mt-4 text-gray-600">Setting up your cloud environment...</p>
-                </div>
-              )}
+                  {/* VM Iframe */}
+                  {session.status === 'ready' && session.vmUrl && (
+                    <div className="bg-gray-900 rounded-2xl p-4 shadow-2xl border border-gray-700">
+                      <div className="flex items-center gap-2 mb-3 px-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="ml-4 text-gray-400 text-sm font-mono">cloud-vm</span>
+                      </div>
+                      <iframe
+                        src={session.vmUrl}
+                        className="w-full h-[600px] rounded-lg border border-gray-700 bg-white"
+                        title="Cloud VM"
+                      />
+                    </div>
+                  )}
 
-              <button
-                onClick={() => {
-                  setSession(null)
-                  setError(null)
-                  setAccountInfo(null)
-                  setAccountCreated(false)
-                }}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors"
-              >
-                Create New Session
-              </button>
-            </div>
-            </>
-          )}
+                  {/* Loading State */}
+                  {session.status === 'creating' && (
+                    <div className="text-center py-16 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
+                      <div className="inline-block relative mb-6">
+                        <div className="absolute inset-0 animate-ping rounded-full bg-purple-400 opacity-75"></div>
+                        <div className="relative animate-spin rounded-full h-16 w-16 border-4 border-purple-600 border-t-transparent"></div>
+                      </div>
+                      <p className="text-xl font-semibold text-gray-700 mb-2">Setting up your cloud environment...</p>
+                      <p className="text-gray-500">This may take a few moments</p>
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => {
+                      setSession(null)
+                      setError(null)
+                      setAccountInfo(null)
+                      setAccountCreated(false)
+                    }}
+                    className="w-full bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                  >
+                    Create New Session
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

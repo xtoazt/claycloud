@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { sessionsApi, type Session } from './lib/api'
 import { WebVMAccountGenerator } from './components/WebVMAccountGenerator'
+import { ResourceWarningModal } from './components/ResourceWarningModal'
+import { generateAccountInWebVM, generateAccountInfo } from './lib/accountGenerator'
 
 
 export default function Home() {
@@ -17,6 +19,9 @@ export default function Home() {
     birthday: string
   } | null>(null)
   const [accountCreated, setAccountCreated] = useState(false)
+  const [showResourceWarning, setShowResourceWarning] = useState(false)
+  const [isRegeneratingAccount, setIsRegeneratingAccount] = useState(false)
+  const resourceCheckInterval = useRef<NodeJS.Timeout | null>(null)
 
   const createSession = async () => {
     setLoading(true)
@@ -124,6 +129,11 @@ export default function Home() {
         if (updatedSession.status === 'ready' || updatedSession.status === 'error') {
           clearInterval(pollInterval)
           setLoading(false)
+          
+          // Start monitoring resources if session is ready
+          if (updatedSession.status === 'ready') {
+            startResourceMonitoring(sessionId)
+          }
         }
       } catch (err) {
         clearInterval(pollInterval)
@@ -141,6 +151,143 @@ export default function Home() {
       }
     }, 300000)
   }
+
+  // Switch to new account when resources are exhausted
+  const switchToNewAccount = useCallback(async (sessionId: string, email: string, password: string) => {
+    try {
+      // Switch to new account (backend handles Colab session creation)
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/sessions/${sessionId}/switch-account`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to switch account')
+      }
+
+      const updatedSession = await response.json()
+      
+      // Update session silently (user doesn't see account details)
+      setSession(updatedSession)
+      setShowResourceWarning(false)
+      setIsRegeneratingAccount(false)
+
+      // Clear any errors
+      setError(null)
+
+    } catch (err: any) {
+      console.error('Account switch failed:', err)
+      setShowResourceWarning(false)
+      setIsRegeneratingAccount(false)
+      throw err
+    }
+  }, [])
+
+  // Monitor resources and auto-regenerate account if exhausted
+  const handleResourceExhausted = useCallback(async (sessionId: string) => {
+    // Prevent multiple simultaneous regenerations
+    if (isRegeneratingAccount) {
+      return
+    }
+
+    // Stop resource monitoring
+    if (resourceCheckInterval.current) {
+      clearInterval(resourceCheckInterval.current)
+      resourceCheckInterval.current = null
+    }
+
+    // Show warning modal immediately
+    setShowResourceWarning(true)
+    setIsRegeneratingAccount(true)
+
+    try {
+      // Generate new account silently in background (runs in WebVM, not visible to user)
+      const newAccountInfo = generateAccountInfo()
+      
+      // Generate account in WebVM (silent, no UI shown)
+      const result = await generateAccountInWebVM(newAccountInfo)
+
+      if (result.success && result.email) {
+        // Switch to new account seamlessly
+        await switchToNewAccount(sessionId, result.email, result.password || newAccountInfo.password)
+        
+        // Restart resource monitoring for new account after switch completes
+        setTimeout(() => {
+          startResourceMonitoring(sessionId)
+        }, 2000)
+      } else {
+        throw new Error(result.error || 'Failed to generate new account')
+      }
+    } catch (err: any) {
+      console.error('Account regeneration failed:', err)
+      setError('Failed to regenerate account. Please try creating a new session.')
+      setShowResourceWarning(false)
+      setIsRegeneratingAccount(false)
+    }
+  }, [isRegeneratingAccount, switchToNewAccount, startResourceMonitoring])
+
+  // Monitor resources and auto-regenerate account if exhausted
+  const startResourceMonitoring = useCallback((sessionId: string) => {
+    // Clear any existing interval
+    if (resourceCheckInterval.current) {
+      clearInterval(resourceCheckInterval.current)
+    }
+
+    // Check resources every 30 seconds
+    resourceCheckInterval.current = setInterval(async () => {
+      // Don't check if already regenerating
+      if (isRegeneratingAccount) {
+        return
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/sessions/${sessionId}/resources`,
+          { method: 'GET' }
+        )
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.exhausted) {
+            // Resources exhausted - show warning and regenerate
+            handleResourceExhausted(sessionId)
+          }
+        }
+      } catch (err) {
+        // Silently fail - don't interrupt user experience
+        console.error('Resource check failed:', err)
+      }
+    }, 30000) // Check every 30 seconds
+  }, [isRegeneratingAccount, handleResourceExhausted])
+
+  const handleResourceWarningDismiss = () => {
+    if (isRegeneratingAccount) {
+      // Wait for regeneration to complete - don't allow dismissal during regeneration
+      return
+    }
+    // User chose to continue anyway - proceed with account switch
+    setShowResourceWarning(false)
+  }
+
+  const handleResourceWarningSave = () => {
+    // User confirmed they've saved their work
+    // Account switch will proceed automatically when regeneration completes
+    // Modal will close when switchToNewAccount completes
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (resourceCheckInterval.current) {
+        clearInterval(resourceCheckInterval.current)
+      }
+    }
+  }, [])
 
   return (
     <main className="min-h-screen p-8">
@@ -194,12 +341,7 @@ export default function Home() {
                       {session.status.toUpperCase()}
                     </span>
                   </p>
-                  {session.accountEmail && (
-                    <p>
-                      <span className="font-semibold">Account:</span>{' '}
-                      {session.accountEmail}
-                    </p>
-                  )}
+                  {/* Don't show account email - keep it hidden from user */}
                   {session.vmUrl && (
                     <p>
                       <span className="font-semibold">VM URL:</span>{' '}
@@ -249,6 +391,13 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <ResourceWarningModal
+        isOpen={showResourceWarning}
+        onDismiss={handleResourceWarningDismiss}
+        onSave={handleResourceWarningSave}
+        isRegenerating={isRegeneratingAccount}
+      />
     </main>
   )
 }

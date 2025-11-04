@@ -1,6 +1,6 @@
 # Clay Cloud
 
-Free cloud computing system using Google Colab APIs. Account generation runs in WebVM (client-side), then uses Colab for free computing.
+Free cloud computing system using Google Colab APIs. Account generation runs in WebVM (client-side), then uses Colab for free computing. **Automatically regenerates accounts when resources are exhausted.**
 
 ## Architecture
 
@@ -10,18 +10,23 @@ Free cloud computing system using Google Colab APIs. Account generation runs in 
 3. **Account created** → Python/Selenium script creates Google account inside WebVM
 4. **Colab authentication** → Backend authenticates with created account
 5. **Colab session ready** → User gets free computing via Google Colab API
+6. **Resource monitoring** → System monitors resource usage
+7. **Auto-regeneration** → When resources exhausted, silently generates new account and switches
 
-### Components:
-- **Frontend**: Next.js with WebVM integration (runs account generator client-side)
-- **Backend**: Express API that sets up Colab sessions after account creation
-- **WebVM**: Client-side virtual machine (runs in browser) for account generation
-- **Colab API**: Google Colab endpoints extracted from `drive.js` for free computing
+### Key Features:
+- **Silent Account Regeneration**: When resources are exhausted, automatically creates new account in background
+- **User Warning**: Popup warns user to save work before account switch
+- **Seamless Switching**: Account switch happens automatically without showing account details
+- **Resource Monitoring**: Continuously monitors Colab resource usage
 
-## Why This Approach?
+## How Account Regeneration Works
 
-- **Can't use Colab without authentication** → Need to create accounts first
-- **WebVM runs account generator** → Client-side isolation, no server resources needed
-- **After authentication** → Use Colab APIs for free computing
+1. **Resource Detection**: System checks Colab resources every 30 seconds
+2. **Exhaustion Detection**: Detects when account hits limits (quota, runtime, etc.)
+3. **Warning Popup**: Shows modal warning user to save work
+4. **Background Generation**: Silently generates new account in WebVM (not visible to user)
+5. **Account Switch**: Seamlessly switches to new account
+6. **Continue Computing**: User continues with new account without interruption
 
 ## Setup
 
@@ -59,30 +64,6 @@ GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/callback
 - `NEXT_PUBLIC_API_URL`: Your backend API URL
 - `NEXT_PUBLIC_GITHUB_REPO`: Your GitHub repository URL
 
-## How It Works
-
-### Step 1: Session Creation
-- User clicks "Start Free Session"
-- Backend creates session structure
-- Frontend generates account info
-
-### Step 2: Account Generation (WebVM)
-- WebVM loads in browser (client-side)
-- Python script with Selenium runs inside WebVM
-- Creates Google account automatically
-- Returns account credentials
-
-### Step 3: Colab Setup
-- Frontend sends account email to backend
-- Backend authenticates with Google Colab API
-- Creates Colab notebook session
-- Returns Colab notebook URL
-
-### Step 4: Free Computing
-- User accesses Colab notebook
-- Can run code, use GPU, etc.
-- All free via Google Colab API
-
 ## Development
 
 ### Run Frontend Locally
@@ -98,9 +79,11 @@ npm run dev:backend
 ## API Endpoints
 
 ### Sessions
-- `POST /api/sessions/create` - Create session (triggers account generation)
+- `POST /api/sessions/create` - Create session
 - `GET /api/sessions/:sessionId` - Get session status
+- `GET /api/sessions/:sessionId/resources` - Check resource usage
 - `POST /api/sessions/:sessionId/complete` - Complete setup after account created
+- `POST /api/sessions/:sessionId/switch-account` - Switch to new account (auto-called)
 - `DELETE /api/sessions/:sessionId` - Delete session
 
 ### Accounts
@@ -113,11 +96,16 @@ npm run dev:backend
 
 ## Technical Details
 
-### WebVM Integration
-- WebVM runs **client-side in the browser**
-- Uses Debian Linux image from WebVM
-- Runs Python/Selenium for account generation
-- No server resources needed for account creation
+### Resource Monitoring
+- Checks Colab resources every 30 seconds
+- Detects exhaustion via error codes and runtime limits
+- Automatically triggers account regeneration
+
+### Account Regeneration
+- Runs silently in WebVM (client-side)
+- No UI shown during generation
+- User only sees warning popup
+- Account details hidden from user
 
 ### Colab API Integration
 - Uses endpoints from `drive.js`:
@@ -126,20 +114,13 @@ npm run dev:backend
 - Authenticates with created accounts
 - Provides free computing resources
 
-### Account Generation Script
-Python script runs inside WebVM:
-- Uses Selenium WebDriver
-- Automates Google signup flow
-- Handles form filling and navigation
-- Returns account credentials
-
 ## Security Notes
 
 ⚠️ **Important**: 
 - Automated account creation may violate Google's Terms of Service
 - Use at your own risk
 - Ensure compliance with all applicable terms and regulations
-- Consider implementing rate limiting and CAPTCHA handling
+- Account details are hidden from users for security
 
 ## License
 

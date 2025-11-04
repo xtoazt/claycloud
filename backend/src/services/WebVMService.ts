@@ -211,6 +211,14 @@ with open('${path}', 'r') as f:
   }
 
   /**
+   * Get Colab session for a VM
+   */
+  async getColabSession(vmId: string): Promise<ColabSession | null> {
+    const vmData = this.vms.get(vmId);
+    return vmData?.session || null;
+  }
+
+  /**
    * Delete VM
    */
   async deleteVM(vmId: string): Promise<void> {

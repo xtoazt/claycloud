@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { sessionRouter } from './routes/sessions';
 import { accountRouter } from './routes/accounts';
 import { authRouter } from './routes/auth';
+import { ResourceMonitor } from './services/ResourceMonitor';
 
 dotenv.config();
 

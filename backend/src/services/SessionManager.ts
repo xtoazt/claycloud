@@ -88,14 +88,28 @@ export class SessionManager {
     const session = this.sessions.get(sessionId);
     if (session) {
       // Cleanup WebVM if exists
-      if (session.vmUrl) {
-        await this.webVMService.deleteVM(session.vmUrl);
-      }
+      // Note: vmUrl is now a Colab URL, not a VM ID
       // Cleanup account if exists
       if (session.accountId) {
         await this.accountManager.deleteAccount(session.accountId);
       }
       this.sessions.delete(sessionId);
+    }
+  }
+
+  /**
+   * Update session with new account (for account switching)
+   */
+  async switchAccount(sessionId: string, accountId: string, accountEmail: string, vmUrl: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      // Update session with new account info
+      session.accountId = accountId;
+      session.accountEmail = accountEmail;
+      session.vmUrl = vmUrl;
+      session.status = 'ready';
+      session.updatedAt = new Date();
+      this.sessions.set(sessionId, session);
     }
   }
 }

@@ -69,6 +69,31 @@ export class AccountManager {
     this.accounts.delete(accountId);
   }
 
+  /**
+   * Create account from existing credentials (for account switching)
+   */
+  async createAccountFromCredentials(email: string, password: string): Promise<Account> {
+    const accountId = uuidv4();
+    
+    // Extract name from email
+    const parts = email.split('@')[0].split('.');
+    const firstName = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'User';
+    const lastName = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : 'Account';
+
+    const account: Account = {
+      id: accountId,
+      email,
+      password,
+      firstName,
+      lastName,
+      status: 'ready',
+      createdAt: new Date(),
+    };
+
+    this.accounts.set(accountId, account);
+    return account;
+  }
+
   private generateRandomName(): string {
     const names = [
       'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Avery', 'Quinn',

@@ -1,127 +1,116 @@
-# Clay Cloud
+# Clay Cloud ☁️
 
-Free cloud computing system using Google Colab APIs. Account generation runs in WebVM (client-side), then uses Colab for free computing. **Automatically regenerates accounts when resources are exhausted.**
+Free cloud computing with automated account management. Powered by WebVM and Google Colab.
 
-## Architecture
+## 🚀 Quick Start
 
-### Flow:
-1. **User requests session** → Frontend creates session on backend
-2. **Account generation in WebVM** → Runs client-side in browser using WebVM (from https://github.com/leaningtech/webvm)
-3. **Account created** → Python/Selenium script creates Google account inside WebVM
-4. **Colab authentication** → Backend authenticates with created account
-5. **Colab session ready** → User gets free computing via Google Colab API
-6. **Resource monitoring** → System monitors resource usage
-7. **Auto-regeneration** → When resources exhausted, silently generates new account and switches
+**Get started in 5 minutes!** → See [QUICK_START.md](./QUICK_START.md)
 
-### Key Features:
-- **Silent Account Regeneration**: When resources are exhausted, automatically creates new account in background
-- **User Warning**: Popup warns user to save work before account switch
-- **Seamless Switching**: Account switch happens automatically without showing account details
-- **Resource Monitoring**: Continuously monitors Colab resource usage
+**Need detailed instructions?** → See [SETUP_GUIDE.md](./SETUP_GUIDE.md)
 
-## How Account Regeneration Works
+## ✨ Features
 
-1. **Resource Detection**: System checks Colab resources every 30 seconds
-2. **Exhaustion Detection**: Detects when account hits limits (quota, runtime, etc.)
-3. **Warning Popup**: Shows modal warning user to save work
-4. **Background Generation**: Silently generates new account in WebVM (not visible to user)
-5. **Account Switch**: Seamlessly switches to new account
-6. **Continue Computing**: User continues with new account without interruption
+- ⚡ **Instant Setup** - Automated account creation and configuration
+- 🔄 **Auto-Recovery** - Seamless account switching when resources are exhausted
+- 💰 **100% Free** - No credit card, no hidden fees
+- 🎨 **Beautiful UI** - Modern, responsive design
+- 🔒 **Secure** - API keys stored as environment variables
 
-## Setup
+## 🏗️ Architecture
 
-### Prerequisites
+- **Frontend**: Next.js (deployed on Vercel)
+- **Backend**: Express.js (runs on GitHub Actions)
+- **Tunnel**: Localtunnel (exposes backend publicly)
+- **Account Generation**: WebVM (client-side)
+- **Compute**: Google Colab
 
-- Node.js 20+
-- npm or yarn
-- Google Cloud credentials (OAuth client ID/secret)
+## 📚 Documentation
 
-### Installation
+- **[QUICK_START.md](./QUICK_START.md)** - 5-minute setup guide
+- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Complete setup instructions
+- **[BACKEND_DEPLOYMENT_NOTE.md](./BACKEND_DEPLOYMENT_NOTE.md)** - Backend deployment details
 
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd claycloud
+## 🛠️ Setup Overview
+
+1. **GitHub Secrets** - Add API keys to GitHub repository secrets
+2. **GitHub Actions** - Start the workflow to deploy backend
+3. **Vercel** - Deploy frontend and configure environment variables
+4. **Done!** - Your app is live
+
+## 🔧 Configuration
+
+### GitHub Secrets
+
+Add `API_KEY` secret with comma-separated values:
+```
+driveApiKey,driveAnonApiKey,oneplatformApiKey,makersuiteApiKey,githubClientId
 ```
 
-2. Install dependencies:
-```bash
-npm run install:all
-```
+Or use individual secrets:
+- `DRIVE_API_KEY`
+- `DRIVE_ANON_API_KEY`
+- `ONEPLATFORM_API_KEY`
+- `MAKERSUITE_API_KEY`
+- `GITHUB_CLIENT_ID`
 
-3. Set up environment variables:
+### Vercel Environment Variables
 
-**Backend (.env)**:
-```env
-PORT=3001
-NODE_ENV=production
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/callback
-```
+- `NEXT_PUBLIC_API_URL` - Backend tunnel URL from GitHub Actions
 
-**Frontend (Vercel environment variables)**:
-- `NEXT_PUBLIC_API_URL`: Your backend API URL
-- `NEXT_PUBLIC_GITHUB_REPO`: Your GitHub repository URL
+## 📖 How It Works
 
-## Development
+1. **Frontend** creates a session request
+2. **Backend** generates account info
+3. **WebVM** (client-side) creates Google account
+4. **Backend** sets up Colab session
+5. **User** gets free cloud computing resources
 
-### Run Frontend Locally
-```bash
-npm run dev:frontend
-```
+When resources are exhausted:
+- System automatically generates new account
+- User gets warning to save work
+- Seamless transition to new account
 
-### Run Backend Locally
-```bash
-npm run dev:backend
-```
+## 🐛 Troubleshooting
 
-## API Endpoints
+### Backend not accessible?
+- Check GitHub Actions workflow is running
+- Verify tunnel URL is correct
+- Check backend health: `https://your-tunnel-url.loca.lt/health`
 
-### Sessions
-- `POST /api/sessions/create` - Create session
-- `GET /api/sessions/:sessionId` - Get session status
-- `GET /api/sessions/:sessionId/resources` - Check resource usage
-- `POST /api/sessions/:sessionId/complete` - Complete setup after account created
-- `POST /api/sessions/:sessionId/switch-account` - Switch to new account (auto-called)
-- `DELETE /api/sessions/:sessionId` - Delete session
+### Frontend can't connect?
+- Verify `NEXT_PUBLIC_API_URL` in Vercel matches backend URL
+- Check CORS settings (already configured to allow all origins)
+- Check browser console for errors
 
-### Accounts
-- `POST /api/accounts/create` - Create account structure
-- `GET /api/accounts/:accountId` - Get account status
+### API keys not working?
+- Verify secrets are set in GitHub
+- Check format (comma-separated if using `API_KEY`)
+- Ensure environment variables are passed to workflow
 
-### Authentication
-- `GET /api/auth/url/:accountId` - Get OAuth URL
-- `GET /api/auth/callback` - OAuth callback
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for more troubleshooting tips.
 
-## Technical Details
+## ⚠️ Important Notes
 
-### Resource Monitoring
-- Checks Colab resources every 30 seconds
-- Detects exhaustion via error codes and runtime limits
-- Automatically triggers account regeneration
+- **GitHub Actions** free tier: 6 hours max per workflow run
+- **Tunnel URLs** may change when workflow restarts
+- **Update Vercel** env vars if backend URL changes
 
-### Account Regeneration
-- Runs silently in WebVM (client-side)
-- No UI shown during generation
-- User only sees warning popup
-- Account details hidden from user
+## 🎯 Production Considerations
 
-### Colab API Integration
-- Uses endpoints from `drive.js`:
-  - `https://colab.research.google.com`
-  - `https://colab.clients6.google.com`
-- Authenticates with created accounts
-- Provides free computing resources
+For production use:
+- Use paid tunnel service (ngrok, Cloudflare Tunnel) for stable URLs
+- Or deploy to cloud service (Railway, Render, Fly.io)
+- Add database for session persistence
+- Set up monitoring and error tracking
 
-## Security Notes
-
-⚠️ **Important**: 
-- Automated account creation may violate Google's Terms of Service
-- Use at your own risk
-- Ensure compliance with all applicable terms and regulations
-- Account details are hidden from users for security
-
-## License
+## 📝 License
 
 MIT
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or PR.
+
+---
+
+**Need help?** Check the [SETUP_GUIDE.md](./SETUP_GUIDE.md) or open an issue.

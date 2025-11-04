@@ -10,11 +10,64 @@ export const ColabAPIConfig = {
   oneplatformEndpoint: 'https://colab.clients6.google.com',
   makersuiteServiceUrl: 'https://alkalimakersuite-pa.clients6.google.com',
   
-  // API Keys (from drive.js)
-  driveApiKey: 'AIzaSyCN_sSPJMpYrAzC5AtTrltNC8oRmLtoqBk',
-  driveAnonApiKey: 'AIzaSyB10s2vWUTwP0pj20wZoxmpZIt3rRodYeg',
-  oneplatformApiKey: 'AIzaSyA2BvntLwNwFthUB4w6_Bhn0cMlVHwyaHc',
-  makersuiteApiKey: 'AIzaSyAmDcruecW4rCL1KdwcbIVHL4LkXxahIgw',
+  // API Keys - loaded from environment variables
+  // Supports both comma-separated API_KEY or individual env vars
+  // Format: API_KEY="driveApiKey,driveAnonApiKey,oneplatformApiKey,makersuiteApiKey,githubClientId"
+  get driveApiKey(): string {
+    if (process.env.DRIVE_API_KEY) {
+      return process.env.DRIVE_API_KEY;
+    }
+    // Try parsing from comma-separated API_KEY
+    const apiKeys = this.parseAPIKeys();
+    return apiKeys.driveApiKey || '';
+  },
+  
+  get driveAnonApiKey(): string {
+    if (process.env.DRIVE_ANON_API_KEY) {
+      return process.env.DRIVE_ANON_API_KEY;
+    }
+    const apiKeys = this.parseAPIKeys();
+    return apiKeys.driveAnonApiKey || '';
+  },
+  
+  get oneplatformApiKey(): string {
+    if (process.env.ONEPLATFORM_API_KEY) {
+      return process.env.ONEPLATFORM_API_KEY;
+    }
+    const apiKeys = this.parseAPIKeys();
+    return apiKeys.oneplatformApiKey || '';
+  },
+  
+  get makersuiteApiKey(): string {
+    if (process.env.MAKERSUITE_API_KEY) {
+      return process.env.MAKERSUITE_API_KEY;
+    }
+    const apiKeys = this.parseAPIKeys();
+    return apiKeys.makersuiteApiKey || '';
+  },
+  
+  // Helper to parse comma-separated API_KEY env var
+  parseAPIKeys(): {
+    driveApiKey?: string;
+    driveAnonApiKey?: string;
+    oneplatformApiKey?: string;
+    makersuiteApiKey?: string;
+    githubClientId?: string;
+  } {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      return {};
+    }
+    
+    const keys = apiKey.split(',').map(k => k.trim());
+    return {
+      driveApiKey: keys[0],
+      driveAnonApiKey: keys[1],
+      oneplatformApiKey: keys[2],
+      makersuiteApiKey: keys[3],
+      githubClientId: keys[4],
+    };
+  },
   
   // Project Numbers
   driveBackgroundSaveProjectNumber: '948411933973',
@@ -78,7 +131,13 @@ export const ColabAPIConfig = {
   ],
   
   // GitHub Integration
-  githubClientId: '5036cf6d81e65aaa6340',
+  get githubClientId(): string {
+    if (process.env.GITHUB_CLIENT_ID) {
+      return process.env.GITHUB_CLIENT_ID;
+    }
+    const apiKeys = this.parseAPIKeys();
+    return apiKeys.githubClientId || '';
+  },
   
   // reCAPTCHA
   recaptchaV2SiteKey: '6LfQttQUAAAAADuPanA_VZMaZgBAOnHZNuuqUewp',
@@ -169,8 +228,13 @@ export function getColabAPIUrl(endpoint: string, params?: Record<string, string>
 export function getColabAPIHeaders(accessToken?: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-Goog-Api-Key': ColabAPIConfig.oneplatformApiKey,
   };
+  
+  // Only add API key if it's available
+  const apiKey = ColabAPIConfig.oneplatformApiKey;
+  if (apiKey) {
+    headers['X-Goog-Api-Key'] = apiKey;
+  }
   
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;

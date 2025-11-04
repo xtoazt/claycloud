@@ -73,6 +73,9 @@ jobs:
           sudo mv "$CHROMEDRIVER_PATH" /usr/local/bin/chromedriver
           chromedriver --version
 
+      - name: Install Tunnel Service
+        run: npm install -g localtunnel
+
       - name: Start Backend Server
         working-directory: ./backend
         run: |
@@ -84,11 +87,122 @@ jobs:
           NODE_ENV: production
           WEBVM_URL: ${{ secrets.WEBVM_URL }}
           SMS_ACTIVATE_API_KEY: ${{ secrets.SMS_ACTIVATE_API_KEY }}
+          # API Keys - comma-separated or individual env vars
+          API_KEY: ${{ secrets.API_KEY }}
+          DRIVE_API_KEY: ${{ secrets.DRIVE_API_KEY }}
+          DRIVE_ANON_API_KEY: ${{ secrets.DRIVE_ANON_API_KEY }}
+          ONEPLATFORM_API_KEY: ${{ secrets.ONEPLATFORM_API_KEY }}
+          MAKERSUITE_API_KEY: ${{ secrets.MAKERSUITE_API_KEY }}
+          GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
+
+      - name: Setup Tunnel
+        id: tunnel
+        run: |
+          echo "🌐 Setting up tunnel..."
+          
+          # Start tunnel in background
+          npx localtunnel --port 3001 --subdomain claycloud-backend > tunnel.log 2>&1 &
+          TUNNEL_PID=$!
+          echo "TUNNEL_PID=$TUNNEL_PID" >> $GITHUB_ENV
+          
+          # Wait for tunnel to establish connection
+          echo "Waiting for tunnel to connect..."
+          for i in {1..30}; do
+            sleep 2
+            if grep -q "your url is" tunnel.log 2>/dev/null; then
+              echo "✅ Tunnel connected!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "⚠️ Tunnel connection timeout after 60 seconds"
+              cat tunnel.log
+              exit 1
+            fi
+          done
+          
+          # Extract tunnel URL from logs (localtunnel outputs: "your url is: https://...")
+          TUNNEL_URL=$(grep -oP 'your url is: \Khttps://[^\s]+' tunnel.log 2>/dev/null || grep -oP 'https://[a-zA-Z0-9.-]+\.loca\.lt' tunnel.log 2>/dev/null || echo "")
+          
+          if [ -z "$TUNNEL_URL" ]; then
+            echo "⚠️ Could not extract tunnel URL from logs. Trying fallback..."
+            # Fallback: construct expected URL
+            TUNNEL_URL="https://claycloud-backend.loca.lt"
+            echo "Using fallback URL: $TUNNEL_URL"
+          fi
+          
+          # Verify tunnel is accessible
+          echo "Verifying tunnel accessibility..."
+          for i in {1..5}; do
+            if curl -f -s "$TUNNEL_URL/health" > /dev/null 2>&1; then
+              echo "✅ Tunnel is accessible!"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "⚠️ Warning: Tunnel URL may not be accessible yet"
+              echo "URL: $TUNNEL_URL"
+              echo "This may take a few minutes to propagate. Check logs:"
+              cat tunnel.log
+            else
+              echo "Waiting for tunnel to be ready... (attempt $i/5)"
+              sleep 5
+            fi
+          done
+          
+          echo "TUNNEL_URL=$TUNNEL_URL" >> $GITHUB_ENV
+          echo "TUNNEL_URL=$TUNNEL_URL" >> $GITHUB_OUTPUT
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Backend is now accessible at:"
+          echo "   $TUNNEL_URL"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "   1. Copy the URL above"
+          echo "   2. Go to Vercel → Settings → Environment Variables"
+          echo "   3. Add/Update NEXT_PUBLIC_API_URL with: $TUNNEL_URL"
+          echo "   4. Redeploy your frontend"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "::notice::Backend URL: $TUNNEL_URL"
+          echo "::notice::Add this URL to Vercel as NEXT_PUBLIC_API_URL"
 
       - name: Keep Server Running
         run: |
+          TUNNEL_URL="${{ steps.tunnel.outputs.TUNNEL_URL }}"
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Backend server and tunnel are running!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📍 Backend URL: $TUNNEL_URL"
+          echo "🏥 Health Check: $TUNNEL_URL/health"
+          echo "📊 Local Health: http://localhost:3001/health"
+          echo ""
+          echo "⏰ Monitoring backend health every 60 seconds..."
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          
+          CHECK_COUNT=0
           while true; do
+            CHECK_COUNT=$((CHECK_COUNT + 1))
+            
+            # Check local server
+            if ! curl -f -s http://localhost:3001/health > /dev/null 2>&1; then
+              echo "❌ Local health check failed at $(date)"
+              echo "   This may indicate the server crashed"
+              exit 1
+            fi
+            
+            # Check tunnel (every 5 checks to reduce noise)
+            if [ $((CHECK_COUNT % 5)) -eq 0 ]; then
+              if curl -f -s "$TUNNEL_URL/health" > /dev/null 2>&1; then
+                echo "✅ Health check passed (check #$CHECK_COUNT) - $(date)"
+              else
+                echo "⚠️ Tunnel health check failed, but local server is OK"
+                echo "   Tunnel may be temporarily unavailable"
+              fi
+            fi
+            
             sleep 60
-            curl -f http://localhost:3001/health || exit 1
           done
+        env:
+          TUNNEL_URL: ${{ steps.tunnel.outputs.TUNNEL_URL }}
+          TUNNEL_PID: ${{ env.TUNNEL_PID }}
 

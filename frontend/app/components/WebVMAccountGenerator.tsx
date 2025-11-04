@@ -26,6 +26,7 @@ export function WebVMAccountGenerator({ accountInfo, onAccountCreated }: WebVMAc
         webvmRef.current.terminate?.()
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const initializeWebVM = async () => {

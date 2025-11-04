@@ -25,12 +25,17 @@ Clay Cloud is designed to be deployed as two separate services:
 
 In Vercel project settings, add these environment variables:
 
-- `NEXT_PUBLIC_API_URL`: Your backend API URL
-  - For GitHub Actions: `https://your-username.github.io` (if using GitHub Pages)
-  - Or use a reverse proxy service
-  - Or use the raw GitHub Actions runner URL if accessible
+**Important**: Do NOT use secrets with `@` prefix in vercel.json. Set them directly in Vercel dashboard.
 
-- `NEXT_PUBLIC_GITHUB_REPO`: Your GitHub repository URL
+1. Go to **Settings** > **Environment Variables** in your Vercel project
+2. Add the following variables:
+
+- `NEXT_PUBLIC_API_URL`: Your backend API URL
+  - For GitHub Actions: Use a tunnel service (ngrok, Cloudflare Tunnel, etc.)
+  - Example: `https://your-subdomain.ngrok.io` or `https://your-app.railway.app`
+  - For local development: `http://localhost:3001` (default fallback)
+
+- `NEXT_PUBLIC_GITHUB_REPO` (Optional): Your GitHub repository URL
   - Example: `https://github.com/yourusername/claycloud`
 
 ### Step 4: Deploy

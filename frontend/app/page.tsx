@@ -22,6 +22,8 @@ export default function Home() {
   const [showResourceWarning, setShowResourceWarning] = useState(false)
   const [isRegeneratingAccount, setIsRegeneratingAccount] = useState(false)
   const resourceCheckInterval = useRef<NodeJS.Timeout | null>(null)
+  const handleResourceExhaustedRef = useRef<((sessionId: string) => Promise<void>) | null>(null)
+  const startResourceMonitoringRef = useRef<((sessionId: string) => void) | null>(null)
 
   const createSession = async () => {
     setLoading(true)
@@ -189,7 +191,7 @@ export default function Home() {
   }, [])
 
   // Monitor resources and auto-regenerate account if exhausted
-  const handleResourceExhausted = useCallback(async (sessionId: string) => {
+  const handleResourceExhausted = useCallback(async (sessionId: string): Promise<void> => {
     // Prevent multiple simultaneous regenerations
     if (isRegeneratingAccount) {
       return
@@ -218,7 +220,9 @@ export default function Home() {
         
         // Restart resource monitoring for new account after switch completes
         setTimeout(() => {
-          startResourceMonitoring(sessionId)
+          if (startResourceMonitoringRef.current) {
+            startResourceMonitoringRef.current(sessionId)
+          }
         }, 2000)
       } else {
         throw new Error(result.error || 'Failed to generate new account')
@@ -229,10 +233,15 @@ export default function Home() {
       setShowResourceWarning(false)
       setIsRegeneratingAccount(false)
     }
-  }, [isRegeneratingAccount, switchToNewAccount, startResourceMonitoring])
+    // generateAccountInfo is a pure function, safe to call without dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRegeneratingAccount, switchToNewAccount])
+
+  // Store ref for handleResourceExhausted
+  handleResourceExhaustedRef.current = handleResourceExhausted
 
   // Monitor resources and auto-regenerate account if exhausted
-  const startResourceMonitoring = useCallback((sessionId: string) => {
+  const startResourceMonitoring = useCallback((sessionId: string): void => {
     // Clear any existing interval
     if (resourceCheckInterval.current) {
       clearInterval(resourceCheckInterval.current)
@@ -255,7 +264,9 @@ export default function Home() {
           const data = await response.json()
           if (data.exhausted) {
             // Resources exhausted - show warning and regenerate
-            handleResourceExhausted(sessionId)
+            if (handleResourceExhaustedRef.current) {
+              await handleResourceExhaustedRef.current(sessionId)
+            }
           }
         }
       } catch (err) {
@@ -263,7 +274,10 @@ export default function Home() {
         console.error('Resource check failed:', err)
       }
     }, 30000) // Check every 30 seconds
-  }, [isRegeneratingAccount, handleResourceExhausted])
+  }, [isRegeneratingAccount])
+
+  // Store ref for startResourceMonitoring
+  startResourceMonitoringRef.current = startResourceMonitoring
 
   const handleResourceWarningDismiss = () => {
     if (isRegeneratingAccount) {
@@ -303,7 +317,7 @@ export default function Home() {
           {!session ? (
             <div className="text-center">
               <p className="text-gray-600 mb-6">
-                Get started with a free cloud computing session. We'll automatically
+                Get started with a free cloud computing session. We&apos;ll automatically
                 set up everything you need using WebVM.
               </p>
               <button

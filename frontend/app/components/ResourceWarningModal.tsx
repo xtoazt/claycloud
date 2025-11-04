@@ -22,7 +22,7 @@ export function ResourceWarningModal({
         
         <div className="space-y-4 mb-6">
           <p className="text-gray-700">
-            Your current session has reached its resource limits. We're automatically setting up a new account for you.
+            Your current session has reached its resource limits. We&apos;re automatically setting up a new account for you.
           </p>
           
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
@@ -47,7 +47,7 @@ export function ResourceWarningModal({
             disabled={isRegenerating}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-2 px-4 rounded-lg transition-colors"
           >
-            I've Saved My Work
+            I&apos;ve Saved My Work
           </button>
           <button
             onClick={onDismiss}

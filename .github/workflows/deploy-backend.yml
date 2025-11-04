@@ -1,0 +1,78 @@
+name: Deploy Backend to GitHub Actions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build
+        working-directory: ./backend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+
+      - name: Setup ChromeDriver
+        run: |
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+          CHROME_MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d. -f1)
+          # Use Chrome for Testing API
+          CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_MAJOR_VERSION}")
+          if [ -z "$CHROMEDRIVER_VERSION" ]; then
+            # Fallback to old API
+            CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}")
+            wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+          else
+            wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip"
+          fi
+          unzip -o /tmp/chromedriver.zip -d /tmp/
+          find /tmp -name chromedriver -type f -executable -exec mv {} /tmp/chromedriver \;
+          chmod +x /tmp/chromedriver
+          sudo mv /tmp/chromedriver /usr/local/bin/chromedriver
+          chromedriver --version
+
+      - name: Start Backend Server
+        working-directory: ./backend
+        run: |
+          npm start &
+          sleep 5
+          curl -f http://localhost:3001/health || exit 1
+        env:
+          PORT: 3001
+          NODE_ENV: production
+          WEBVM_URL: ${{ secrets.WEBVM_URL }}
+          SMS_ACTIVATE_API_KEY: ${{ secrets.SMS_ACTIVATE_API_KEY }}
+
+      - name: Keep Server Running
+        run: |
+          while true; do
+            sleep 60
+            curl -f http://localhost:3001/health || exit 1
+          done
+
